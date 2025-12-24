@@ -1,10 +1,26 @@
 from rest_framework import viewsets, permissions, generics, permissions
 from .models import Food, Order
 from .serializers import FoodSerializer, OrderSerializer
-from rest_framework.permissions import IsAdminUser, AllowAny
+from rest_framework.permissions import IsAdminUser, AllowAny, IsAuthenticated
 from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
 from .serializers import UserRegisterSerializer
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+class MeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+      user = request.user
+      return Response({
+          "id": user.id,
+          "username": user.username,
+          "email": user.email,
+          "is_staff": user.is_staff,
+          "is_superuser": user.is_superuser,
+      })
+
 
 User = get_user_model()
 
@@ -31,5 +47,9 @@ class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user).order_by('-created_at')
-
+        user = self.request.user
+        # Admin (staff) vê todos os pedidos
+        if user.is_staff:
+            return Order.objects.all().order_by('-created_at')
+        # Usuário comum vê só os seus
+        return Order.objects.filter(user=user).order_by('-created_at')

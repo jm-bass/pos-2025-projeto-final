@@ -21,8 +21,10 @@ class Order(models.Model):
         CARD = 'CARD', 'Cartão'
 
     class Status(models.TextChoices):
-        CREATED = 'CREATED', 'Criado'
-        CONFIRMED = 'CONFIRMED', 'Confirmado'
+        PENDING = 'PENDING', 'Em espera'
+        PREPARING = 'PREPARING', 'Em preparação'
+        OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY', 'Saiu para entrega'
+        DELIVERED = 'DELIVERED', 'Entregue'
         CANCELLED = 'CANCELLED', 'Cancelado'
 
     user = models.ForeignKey(
@@ -37,9 +39,9 @@ class Order(models.Model):
         default=PaymentMethod.CASH,
     )
     status = models.CharField(
-        max_length=10,
+        max_length=20,
         choices=Status.choices,
-        default=Status.CREATED,
+        default=Status.PENDING,
     )
     delivery_fee = models.DecimalField(
         max_digits=6,
