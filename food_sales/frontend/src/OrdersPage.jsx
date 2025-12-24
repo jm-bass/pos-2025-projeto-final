@@ -6,6 +6,9 @@ export function OrdersPage({ accessToken, onBackToMenu }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [cancelError, setCancelError] = useState(null);
+  const [cancelingId, setCancelingId] = useState(null);
+
   const STATUS_LABELS = {
     PENDING: "Em espera",
     PREPARING: "Em preparação",
@@ -13,7 +16,6 @@ export function OrdersPage({ accessToken, onBackToMenu }) {
     DELIVERED: "Entregue",
     CANCELLED: "Cancelado",
   };
-
 
   async function fetchOrders() {
     try {
@@ -43,6 +45,42 @@ export function OrdersPage({ accessToken, onBackToMenu }) {
     fetchOrders();
   }, []);
 
+  function canCancel(order) {
+    return ["PENDING", "PREPARING"].includes(order.status);
+  }
+
+  async function handleCancel(orderId) {
+    setCancelError(null);
+    setCancelingId(orderId);
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/orders/${orderId}/cancel/`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const detail = data.detail || "Erro ao cancelar pedido";
+        throw new Error(detail);
+      }
+
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? data : o))
+      );
+    } catch (err) {
+      setCancelError(err.message);
+    } finally {
+      setCancelingId(null);
+    }
+  }
+
   if (loading) {
     return <div>Carregando pedidos...</div>;
   }
@@ -68,6 +106,10 @@ export function OrdersPage({ accessToken, onBackToMenu }) {
           <button onClick={onBackToMenu}>Voltar ao cardápio</button>
         </div>
       </header>
+
+      {cancelError && (
+        <p style={{ color: "red", marginBottom: 8 }}>{cancelError}</p>
+      )}
 
       {orders.length === 0 && <p>Você ainda não fez nenhum pedido.</p>}
 
@@ -102,6 +144,17 @@ export function OrdersPage({ accessToken, onBackToMenu }) {
               ))}
             </ul>
           </div>
+
+          {canCancel(order) && (
+            <div style={{ marginTop: 8 }}>
+              <button
+                onClick={() => handleCancel(order.id)}
+                disabled={cancelingId === order.id}
+              >
+                {cancelingId === order.id ? "Cancelando..." : "Cancelar pedido"}
+              </button>
+            </div>
+          )}
         </div>
       ))}
     </div>

@@ -23,13 +23,20 @@ export function AdminOrdersPage({ accessToken, onBack }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [savingId, setSavingId] = useState(null);
+  const [filterDate, setFilterDate] = useState("");
 
-  async function fetchOrders() {
+  async function fetchOrders(dateParam) {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/orders/`, {
+      // ?all=1 para o backend saber que é consulta "admin"
+      let url = `${API_BASE_URL}/orders/?all=1`;
+      if (dateParam && dateParam !== "") {
+        url += `&date=${dateParam}`;
+      }
+
+      const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -49,7 +56,7 @@ export function AdminOrdersPage({ accessToken, onBack }) {
   }
 
   useEffect(() => {
-    fetchOrders();
+    fetchOrders(filterDate);
   }, []);
 
   async function handleStatusChange(orderId, newStatus) {
@@ -102,8 +109,26 @@ export function AdminOrdersPage({ accessToken, onBack }) {
       >
         <h1>Admin - Pedidos</h1>
         <div>
-          <button onClick={fetchOrders} style={{ marginRight: 8 }}>
-            Atualizar
+          <input
+            type="date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            style={{ marginRight: 8 }}
+          />
+          <button
+            onClick={() => fetchOrders(filterDate)}
+            style={{ marginRight: 8 }}
+          >
+            Filtrar
+          </button>
+          <button
+            onClick={() => {
+              setFilterDate("");
+              fetchOrders("");
+            }}
+            style={{ marginRight: 8 }}
+          >
+            Todos
           </button>
           <button onClick={onBack}>Voltar</button>
         </div>
