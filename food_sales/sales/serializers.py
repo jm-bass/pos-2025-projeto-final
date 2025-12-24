@@ -1,6 +1,7 @@
 from decimal import Decimal
 from django.db import transaction
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 from .models import Food, Order, OrderItem
 from django.contrib.auth import get_user_model
 
@@ -71,7 +72,6 @@ class OrderSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id',
             'user',
-            'status',
             'delivery_fee',
             'subtotal',
             'total',
@@ -116,19 +116,18 @@ class OrderSerializer(serializers.ModelSerializer):
         return order
     
     def update(self, instance, validated_data):
-        request = self.context.get('request')
-        user = getattr(request, 'user', None)
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
 
-        # Usuário comum não pode editar pedidos
+        # Apenas admin pode editar pedidos
         if not user or not user.is_staff:
-            from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Apenas administradores podem atualizar pedidos.")
 
-        # Admin: permitir atualizar apenas alguns campos (por enquanto, status)
-        status_value = validated_data.get('status', None)
-        if status_value:
-            instance.status = status_value
+        # Só mexe nos campos simples
+        for field in ["status", "delivery_address", "payment_method"]:
+            value = validated_data.get(field, serializers.empty)
+            if value is not serializers.empty:
+                setattr(instance, field, value)
 
         instance.save()
         return instance
-

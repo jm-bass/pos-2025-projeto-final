@@ -6,6 +6,14 @@ export function OrdersPage({ accessToken, onBackToMenu }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const STATUS_LABELS = {
+    PENDING: "Em espera",
+    PREPARING: "Em preparação",
+    OUT_FOR_DELIVERY: "Saiu para entrega",
+    DELIVERED: "Entregue",
+    CANCELLED: "Cancelado",
+  };
+
 
   async function fetchOrders() {
     try {
@@ -75,7 +83,7 @@ export function OrdersPage({ accessToken, onBackToMenu }) {
           }}
         >
           <div style={{ marginBottom: 8 }}>
-            <strong>Pedido #{order.id}</strong> — {order.status} —{" "}
+            <strong>Pedido #{order.id}</strong> — {STATUS_LABELS[order.status] || order.status} —{" "}
             {new Date(order.created_at).toLocaleString()}
           </div>
           <div>Endereço: {order.delivery_address}</div>

@@ -48,8 +48,11 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # Admin (staff) vê todos os pedidos
         if user.is_staff:
             return Order.objects.all().order_by('-created_at')
-        # Usuário comum vê só os seus
         return Order.objects.filter(user=user).order_by('-created_at')
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context

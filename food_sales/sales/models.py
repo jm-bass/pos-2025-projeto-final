@@ -8,7 +8,7 @@ class Food(models.Model):
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=8, decimal_places=2)
     available = models.BooleanField(default=True)
-    image_url = models.URLField(blank=True)  # por enquanto só URL de imagem
+    image_url = models.CharField(max_length=15000, blank=True)
 
     def __str__(self):
         return self.name
