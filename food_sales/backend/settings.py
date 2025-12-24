@@ -129,13 +129,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        # Se quiser manter Session para admin / testes via navegador:
         'rest_framework.authentication.SessionAuthentication',
-        # depois podemos trocar/adicionar JWT
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
 }
+
 
 
 CORS_ALLOW_ALL_ORIGINS = True

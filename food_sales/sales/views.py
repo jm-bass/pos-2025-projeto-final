@@ -1,8 +1,20 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, generics, permissions
 from .models import Food, Order
 from .serializers import FoodSerializer, OrderSerializer
 from rest_framework.permissions import IsAdminUser, AllowAny
 from rest_framework.decorators import action
+from django.contrib.auth import get_user_model
+from .serializers import UserRegisterSerializer
+
+User = get_user_model()
+
+
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserRegisterSerializer
+    permission_classes = [permissions.AllowAny]
+
+
 
 class FoodViewSet(viewsets.ModelViewSet):
     queryset = Food.objects.all().order_by('name')
