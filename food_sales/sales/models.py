@@ -9,6 +9,7 @@ class Food(models.Model):
     price = models.DecimalField(max_digits=8, decimal_places=2)
     available = models.BooleanField(default=True)
     image_url = models.CharField(max_length=15000, blank=True)
+    stock = models.PositiveIntegerField(default=0)  # novo campo
 
     def __str__(self):
         return self.name

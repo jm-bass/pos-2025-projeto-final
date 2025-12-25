@@ -9,6 +9,7 @@ const emptyForm = {
   price: "",
   available: true,
   image_url: "",
+  stock: 0,
 };
 
 export function AdminProductsPage({ accessToken, onBack }) {
@@ -50,6 +51,7 @@ export function AdminProductsPage({ accessToken, onBack }) {
       price: String(food.price),
       available: food.available,
       image_url: food.image_url || "",
+      stock: food.stock ?? 0,
     });
     setSaveError(null);
   }
@@ -70,6 +72,7 @@ export function AdminProductsPage({ accessToken, onBack }) {
       price: form.price,
       available: form.available,
       image_url: form.image_url,
+      stock: form.stock,
     };
 
     const url = form.id
@@ -157,6 +160,7 @@ export function AdminProductsPage({ accessToken, onBack }) {
           <tr>
             <th style={{ borderBottom: "1px solid #ccc", textAlign: "left" }}>Nome</th>
             <th style={{ borderBottom: "1px solid #ccc" }}>Preço</th>
+            <th style={{ borderBottom: "1px solid #ccc" }}>Estoque</th>
             <th style={{ borderBottom: "1px solid #ccc" }}>Disponível</th>
             <th style={{ borderBottom: "1px solid #ccc" }}>Ações</th>
           </tr>
@@ -167,6 +171,9 @@ export function AdminProductsPage({ accessToken, onBack }) {
               <td style={{ borderBottom: "1px solid #eee" }}>{food.name}</td>
               <td style={{ borderBottom: "1px solid #eee", textAlign: "center" }}>
                 R$ {Number(food.price).toFixed(2)}
+              </td>
+              <td style={{ borderBottom: "1px solid #eee", textAlign: "center" }}>
+                {food.stock}
               </td>
               <td style={{ borderBottom: "1px solid #eee", textAlign: "center" }}>
                 {food.available ? "Sim" : "Não"}
@@ -218,6 +225,22 @@ export function AdminProductsPage({ accessToken, onBack }) {
               step="0.01"
               value={form.price}
               onChange={(e) => setForm({ ...form, price: e.target.value })}
+              style={{ width: "100%" }}
+              required
+            />
+          </label>
+        </div>
+
+        <div style={{ marginBottom: 8 }}>
+          <label>
+            Estoque:
+            <input
+              type="number"
+              min="0"
+              value={form.stock}
+              onChange={(e) =>
+                setForm({ ...form, stock: Number(e.target.value) })
+              }
               style={{ width: "100%" }}
               required
             />

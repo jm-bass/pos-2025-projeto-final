@@ -28,7 +28,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 class FoodSerializer(serializers.ModelSerializer):
     class Meta:
         model = Food
-        fields = ['id', 'name', 'description', 'price', 'available', 'image_url']
+        fields = ['id', 'name', 'description', 'price', 'available', 'image_url', 'stock']
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -50,6 +50,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
             'line_total',
         ]
         read_only_fields = ['id', 'food', 'unit_price', 'line_total']
+
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
@@ -80,9 +81,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        # retira os dados dos itens ANTES de chamar o create padrão
         items_data = validated_data.pop('items')
-
         user = self.context['request'].user
 
         # cria o pedido base
@@ -94,9 +93,22 @@ class OrderSerializer(serializers.ModelSerializer):
         subtotal = Decimal('0.00')
 
         for item_data in items_data:
-            food = item_data['food']           # já é um objeto Food
+            food = item_data['food']        # já é um objeto Food
             quantity = item_data['quantity']
-            unit_price = food.price            # Decimal
+
+            # valida se o produto está disponível
+            if not food.available:
+                raise serializers.ValidationError(
+                    {"detail": f"O produto '{food.name}' está indisponível no momento."}
+                )
+
+            # valida estoque suficiente
+            if food.stock is not None and quantity > food.stock:
+                raise serializers.ValidationError(
+                    {"detail": f"Quantidade solicitada de '{food.name}' excede o estoque disponível ({food.stock})."}
+                )
+
+            unit_price = food.price
             line_total = unit_price * quantity
 
             OrderItem.objects.create(
@@ -107,6 +119,14 @@ class OrderSerializer(serializers.ModelSerializer):
                 line_total=line_total,
             )
 
+            # abate do estoque
+            if food.stock is not None:
+                food.stock -= quantity
+                if food.stock <= 0:
+                    food.stock = 0
+                    food.available = False
+                food.save()
+
             subtotal += line_total
 
         order.subtotal = subtotal
@@ -114,7 +134,7 @@ class OrderSerializer(serializers.ModelSerializer):
         order.save()
 
         return order
-    
+
     def update(self, instance, validated_data):
         request = self.context.get("request")
         user = getattr(request, "user", None)
