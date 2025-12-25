@@ -8,6 +8,7 @@ from .serializers import UserRegisterSerializer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
+from django.db import transaction
 
 from django.utils.dateparse import parse_date
 from django.db.models.functions import TruncDate
@@ -77,6 +78,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         return context
 
     @action(detail=True, methods=["post"], url_path="cancel")
+    @transaction.atomic
     def cancel(self, request, pk=None):
         order = self.get_object()
 
@@ -91,7 +93,19 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # devolve estoque de cada item
+        for item in order.items.select_related("food").all():
+            food = item.food
+            # só devolve se o produto ainda existir e tiver campo de estoque
+            if food is not None and food.stock is not None:
+                food.stock += item.quantity
+                if food.stock > 0:
+                    food.available = True
+                food.save()
+
+        # marca como cancelado
         order.status = Order.Status.CANCELLED
         order.save()
+
         serializer = self.get_serializer(order)
         return Response(serializer.data, status=status.HTTP_200_OK)

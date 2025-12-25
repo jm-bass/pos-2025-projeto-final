@@ -104,20 +104,31 @@ export function MenuPage({ accessToken, onLogout }) {
       const data = await response.json(); // lê o body só uma vez
 
       if (!response.ok) {
-        const detail =
-          data && (data.detail || JSON.stringify(data));
+        const detail = data && (data.detail || JSON.stringify(data));
         throw new Error(detail || "Erro ao criar pedido");
       }
 
-        setOrderSuccess(`Pedido #${data.id} criado com sucesso!`);
-        setCart({});
-        setDeliveryAddress("");
-        setPaymentMethod("PIX");
+      // limpar carrinho e campos
+      setOrderSuccess(`Pedido #${data.id} criado com sucesso!`);
+      setCart({});
+      setDeliveryAddress("");
+      setPaymentMethod("PIX");
 
-        setTimeout(() => {
+      // >>> RECARREGA OS PRODUTOS PARA ATUALIZAR DISPONIBILIDADE/ESTOQUE <<<
+      try {
+        const foodsResponse = await fetch(`${API_BASE_URL}/foods/`);
+        if (foodsResponse.ok) {
+          const updatedFoods = await foodsResponse.json();
+          setFoods(updatedFoods);
+        }
+      } catch (e) {
+        // se der erro aqui, só ignora e mantém o aviso de sucesso do pedido
+        console.error("Erro ao atualizar cardápio após pedido:", e);
+      }
+
+      setTimeout(() => {
         setOrderSuccess(null);
-        }, 4000);
-
+      }, 4000);
     } catch (err) {
       setOrderError(err.message);
     } finally {

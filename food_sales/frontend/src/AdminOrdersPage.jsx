@@ -57,6 +57,7 @@ export function AdminOrdersPage({ accessToken, onBack }) {
 
   useEffect(() => {
     fetchOrders(filterDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleStatusChange(orderId, newStatus) {
@@ -78,6 +79,43 @@ export function AdminOrdersPage({ accessToken, onBack }) {
       }
 
       const updated = await response.json();
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? updated : o))
+      );
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  async function handleCancel(orderId) {
+    if (!window.confirm("Tem certeza que deseja cancelar este pedido?")) {
+      return;
+    }
+
+    setSavingId(orderId);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/orders/${orderId}/cancel/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const detail = data && (data.detail || JSON.stringify(data));
+        throw new Error(detail || "Erro ao cancelar pedido");
+      }
+
+      // a action cancel já devolve o pedido atualizado
+      const updated = data;
       setOrders((prev) =>
         prev.map((o) => (o.id === orderId ? updated : o))
       );
@@ -154,7 +192,7 @@ export function AdminOrdersPage({ accessToken, onBack }) {
               <div>Cliente: {order.user}</div>
               <div>Endereço: {order.delivery_address}</div>
             </div>
-            <div>
+            <div style={{ textAlign: "right" }}>
               <div>
                 Status atual:{" "}
                 <strong>{STATUS_LABELS[order.status] || order.status}</strong>

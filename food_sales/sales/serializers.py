@@ -135,6 +135,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
         return order
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         request = self.context.get("request")
         user = getattr(request, "user", None)
@@ -143,7 +144,23 @@ class OrderSerializer(serializers.ModelSerializer):
         if not user or not user.is_staff:
             raise PermissionDenied("Apenas administradores podem atualizar pedidos.")
 
-        # Só mexe nos campos simples
+        old_status = instance.status
+        new_status = validated_data.get("status", old_status)
+
+        # Se está mudando de um status 'ativo' para CANCELLED, devolve estoque
+        if (
+            old_status in [Order.Status.PENDING, Order.Status.PREPARING, Order.Status.OUT_FOR_DELIVERY]
+            and new_status == Order.Status.CANCELLED
+        ):
+            for item in instance.items.select_related("food").all():
+                food = item.food
+                if food is not None and food.stock is not None:
+                    food.stock += item.quantity
+                    if food.stock > 0:
+                        food.available = True
+                    food.save()
+
+        # Aplica os demais campos simples
         for field in ["status", "delivery_address", "payment_method"]:
             value = validated_data.get(field, serializers.empty)
             if value is not serializers.empty:
